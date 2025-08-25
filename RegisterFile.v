@@ -1,28 +1,29 @@
-module RegisterFile(
-    input         clk,
-    input         RegWrite,
-    input  [4:0]  ReadAddr1,
-    input  [4:0]  ReadAddr2,
-    input  [4:0]  WriteAddr,
-    input  [31:0] WriteData,
-    output [31:0] ReadData1,
-    output [31:0] ReadData2
+module BancoDeRegistradores(
+    input        clk,
+    input        EscreveRegistrador,
+    input  [4:0] EnderecoLeitura1,
+    input  [4:0] EnderecoLeitura2,
+    input  [4:0] EnderecoEscrita,
+    input  [31:0] DadoParaEscrita,
+    output [31:0] DadoLido1,
+    output [31:0] DadoLido2
 );
 
-    reg [31:0] registers[0:31];
+    reg [31:0] registradores[0:31];
+
     always @(posedge clk) begin
-        if (RegWrite && (WriteAddr != 5'b0)) begin
-            registers[WriteAddr] <= WriteData;
+        if (EscreveRegistrador && (EnderecoEscrita != 5'b0)) begin
+            registradores[EnderecoEscrita] <= DadoParaEscrita;
         end
     end
 
-    assign ReadData1 = (ReadAddr1 == 5'b0) ? 32'b0 : registers[ReadAddr1];
-    assign ReadData2 = (ReadAddr2 == 5'b0) ? 32'b0 : registers[ReadAddr2];
+    assign DadoLido1 = (EnderecoLeitura1 == 5'b0) ? 32'b0 : registradores[EnderecoLeitura1];
+    assign DadoLido2 = (EnderecoLeitura2 == 5'b0) ? 32'b0 : registradores[EnderecoLeitura2];
 
     integer i;
     initial begin
         for (i = 0; i < 32; i = i + 1) begin
-            registers[i] = 32'b0;
+            registradores[i] = 32'b0;
         end
     end
 

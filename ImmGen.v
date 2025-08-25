@@ -1,18 +1,18 @@
-module ImmGen(
-    input  [31:0] instruction,
-    output reg [31:0] immediate
+module GeradorDeImediato(
+    input  [31:0] instrucao,
+    output reg [31:0] imediato
 );
 
     always @(*) begin
-        case (instruction[6:0])
+        case (instrucao[6:0])
             7'b0000011, 7'b0010011:
-                immediate = {{20{instruction[31]}}, instruction[31:20]};
+                imediato = {{20{instrucao[31]}}, instrucao[31:20]};
             7'b0100011:
-                immediate = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]};
+                imediato = {{20{instrucao[31]}}, instrucao[31:25], instrucao[11:7]};
             7'b1100011:
-                immediate = {{20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
+                imediato = {{20{instrucao[31]}}, instrucao[7], instrucao[30:25], instrucao[11:8], 1'b0};
             default:
-                immediate = 32'hxxxxxxxx;
+                imediato = 32'hxxxxxxxx;
         endcase
     end
 

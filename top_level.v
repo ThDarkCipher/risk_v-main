@@ -1,125 +1,96 @@
-/*`include "ALU.v"
-`include "RegisterFile.v"      
-`include "InstructionMemory.v" 
-`include "DataMemory.v"        
-`include "Control.v"           
-`include "ALUControl.v"        
-`include "ImmGen.v"            
-
-module top_level(
-    input clk,    
-    input rst     
+module processador_completo(
+    input clk,
+    input rst
 );
-    
-    
-    
-    wire RegWrite, ALUSrc, MemtoReg, MemRead, MemWrite, Branch;
-    wire [1:0] ALUOp;
-    wire [3:0] ALUOperation;
+
+    wire EscreveRegistrador, FonteULA, MemParaReg, LeMemoria, EscreveMemoria, Desvio;
+    wire [1:0] OperacaoULA_Ctrl;
+    wire [3:0] OperacaoULA_Final;
     wire Zero;
-    wire PCSrc;
+    wire FontePC;
 
+    wire [31:0] PC_atual, PC_proximo, PC_mais_4, EnderecoDesvio;
+    wire [31:0] instrucao;
+    wire [31:0] DadoLido1, DadoLido2;
+    wire [31:0] imediato;
+    wire [31:0] Entrada_B_ULA;
+    wire [31:0] resultado_ULA;
+    wire [31:0] dado_lido_memoria;
+    wire [31:0] dado_para_escrita_reg;
     
-    wire [31:0] PC_current, PC_next, PC_plus_4, Branch_addr;
-    wire [31:0] instruction;
-    wire [31:0] ReadData1, ReadData2;
-    wire [31:0] immediate;
-    wire [31:0] ALU_input_B;
-    wire [31:0] ALU_result;
-    wire [31:0] Memory_read_data;
-    wire [31:0] WriteData_for_Reg;
-    
-    
+    reg [31:0] registrador_PC;
 
-    
-    reg [31:0] PC_reg;
     always @(posedge clk or posedge rst) begin
         if (rst)
-            PC_reg <= 32'h00000000; 
+            registrador_PC <= 32'h00000000;
         else
-            PC_reg <= PC_next;
+            registrador_PC <= PC_proximo;
     end
-    assign PC_current = PC_reg;
     
-    
-    assign PC_plus_4 = PC_current + 32'd4;
-    
-    
-    InstructionMemory inst_mem (
-        .Address(PC_current),
-        .Instruction(instruction)
+    assign PC_atual = registrador_PC;
+    assign PC_mais_4 = PC_atual + 32'd4;
+
+    MemoriaDeInstrucoes mem_inst (
+        .Endereco(PC_atual),
+        .Instrucao(instrucao)
     );
-    
-    
-    Control main_control (
-        .Opcode(instruction[6:0]),
-        .RegWrite(RegWrite),
-        .ALUSrc(ALUSrc),
-        .MemtoReg(MemtoReg),
-        .MemRead(MemRead),
-        .MemWrite(MemWrite),
-        .Branch(Branch),
-        .ALUOp(ALUOp)
+
+    Controle controle_principal (
+        .CodigoDaOperacao(instrucao[6:0]),
+        .EscreveRegistrador(EscreveRegistrador),
+        .FonteULA(FonteULA),
+        .MemParaReg(MemParaReg),
+        .LeMemoria(LeMemoria),
+        .EscreveMemoria(EscreveMemoria),
+        .Desvio(Desvio),
+        .OperacaoULA(OperacaoULA_Ctrl)
     );
-    
-    
-    RegisterFile reg_file (
+
+    BancoDeRegistradores banco_de_registradores (
         .clk(clk),
-        .RegWrite(RegWrite),
-        .ReadAddr1(instruction[19:15]),
-        .ReadAddr2(instruction[24:20]),
-        .WriteAddr(instruction[11:7]),
-        .WriteData(WriteData_for_Reg),
-        .ReadData1(ReadData1),
-        .ReadData2(ReadData2)
+        .EscreveRegistrador(EscreveRegistrador),
+        .EnderecoLeitura1(instrucao[19:15]),
+        .EnderecoLeitura2(instrucao[24:20]),
+        .EnderecoEscrita(instrucao[11:7]),
+        .DadoParaEscrita(dado_para_escrita_reg),
+        .DadoLido1(DadoLido1),
+        .DadoLido2(DadoLido2)
     );
-    
-    
-    ImmGen imm_gen (
-        .instruction(instruction),
-        .immediate(immediate)
+
+    GeradorDeImediato gerador_imm (
+        .instrucao(instrucao),
+        .imediato(imediato)
     );
-    
-    
-    ALUControl alu_control (
-        .ALUOp(ALUOp),
-        .Funct3(instruction[14:12]),
-        .Funct7b5(instruction[30]),
-        .ALUOperation(ALUOperation)
+
+    ControleULA controle_ula (
+        .ALUOp(OperacaoULA_Ctrl),
+        .Funct3(instrucao[14:12]),
+        .Funct7b5(instrucao[30]),
+        .ALUOperation(OperacaoULA_Final)
     );
-    
-    
-    assign ALU_input_B = ALUSrc ? immediate : ReadData2;
-    
-    
-    ALU alu_inst (
-        .A(ReadData1),
-        .B(ALU_input_B),
-        .ALUControl(ALUOperation),
-        .Result(ALU_result),
+
+    assign Entrada_B_ULA = FonteULA ? imediato : DadoLido2;
+
+    ULA instancia_ula (
+        .A(DadoLido1),
+        .B(Entrada_B_ULA),
+        .ALUControl(OperacaoULA_Final),
+        .Result(resultado_ULA),
         .Zero(Zero)
     );
-    
-    
-    DataMemory data_mem (
-        .clk(clk),
-        .MemRead(MemRead),
-        .MemWrite(MemWrite),
-        .Address(ALU_result),
-        .WriteData(ReadData2),
-        .ReadData(Memory_read_data)
-    );
-    
-    
-    assign WriteData_for_Reg = MemtoReg ? Memory_read_data : ALU_result;
 
-    
-    
-    assign Branch_addr = PC_current + immediate; 
-    
-   
-    assign PCSrc = Branch & Zero; 
-    
-    assign PC_next = PCSrc ? Branch_addr : PC_plus_4;
+    MemoriaDeDados mem_dados (
+        .clk(clk),
+        .LeMemoria(LeMemoria),
+        .EscreveMemoria(EscreveMemoria),
+        .Endereco(resultado_ULA),
+        .DadoParaEscrita(DadoLido2),
+        .ReadData(dado_lido_memoria)
+    );
+
+    assign dado_para_escrita_reg = MemParaReg ? dado_lido_memoria : resultado_ULA;
+    assign EnderecoDesvio = PC_atual + imediato;
+    assign FontePC = Desvio & Zero;
+    assign PC_proximo = FontePC ? EnderecoDesvio : PC_mais_4;
 
 endmodule

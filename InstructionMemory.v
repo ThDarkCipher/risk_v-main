@@ -1,13 +1,14 @@
-module InstructionMemory(
-    input  [31:0] Address,
-    output [31:0] Instruction
+module MemoriaDeInstrucoes(
+    input  [31:0] Endereco,
+    output [31:0] Instrucao
 );
-    reg [31:0] mem[0:1023];
+
+    reg [31:0] memoria[0:1023];
 
     initial begin
-        $readmemh("instructions.mem", mem);
+        $readmemh("instructions.mem", memoria);
     end
 
-    assign Instruction = mem[Address[31:2]];
+    assign Instrucao = memoria[Endereco[31:2]];
 
 endmodule

@@ -1,78 +1,60 @@
-module Control(
-    input  [6:0] Opcode,
-    output reg   RegWrite,
-    output reg   ALUSrc,
-    output reg   MemtoReg,
-    output reg   MemRead,
-    output reg   MemWrite,
-    output reg   Branch,
-    output reg [1:0] ALUOp
+module Controle(
+    input  [6:0] CodigoDaOperacao,
+    output reg     EscreveRegistrador,
+    output reg     FonteULA,
+    output reg     MemParaReg,
+    output reg     LeMemoria,
+    output reg     EscreveMemoria,
+    output reg     Desvio,
+    output reg [1:0] OperacaoULA
 );
 
-    parameter R_TYPE           = 7'b0110011;
-    parameter I_TYPE_IMMEDIATE = 7'b0010011;
-    parameter I_TYPE_LOAD      = 7'b0000011;
-    parameter S_TYPE_STORE     = 7'b0100011;
-    parameter B_TYPE_BRANCH    = 7'b1100011;
+    parameter TIPO_R             = 7'b0110011;
+    parameter TIPO_I_IMEDIATO    = 7'b0010011;
+    parameter TIPO_I_CARGA       = 7'b0000011;
+    parameter TIPO_S_ARMAZENAMENTO = 7'b0100011;
+    parameter TIPO_B_DESVIO      = 7'b1100011;
 
     always @(*) begin
-        RegWrite = 0;
-        ALUSrc   = 0;
-        MemtoReg = 0;
-        MemRead  = 0;
-        MemWrite = 0;
-        Branch   = 0;
-        ALUOp    = 2'bxx;
+        EscreveRegistrador = 0;
+        FonteULA           = 0;
+        MemParaReg         = 0;
+        LeMemoria          = 0;
+        EscreveMemoria     = 0;
+        Desvio             = 0;
+        OperacaoULA        = 2'bxx;
 
-        case (Opcode)
-            R_TYPE: begin
-                RegWrite = 1;
-                ALUSrc   = 0;
-                MemtoReg = 0;
-                MemRead  = 0;
-                MemWrite = 0;
-                Branch   = 0;
-                ALUOp    = 2'b10;
+        case (CodigoDaOperacao)
+            TIPO_R: begin
+                EscreveRegistrador = 1;
+                FonteULA           = 0;
+                OperacaoULA        = 2'b10;
             end
 
-            I_TYPE_IMMEDIATE: begin
-                RegWrite = 1;
-                ALUSrc   = 1;
-                MemtoReg = 0;
-                MemRead  = 0;
-                MemWrite = 0;
-                Branch   = 0;
-                ALUOp    = 2'b10;
+            TIPO_I_IMEDIATO: begin
+                EscreveRegistrador = 1;
+                FonteULA           = 1;
+                OperacaoULA        = 2'b10;
             end
 
-            I_TYPE_LOAD: begin
-                RegWrite = 1;
-                ALUSrc   = 1;
-                MemtoReg = 1;
-                MemRead  = 1;
-                MemWrite = 0;
-                Branch   = 0;
-                ALUOp    = 2'b00;
+            TIPO_I_CARGA: begin
+                EscreveRegistrador = 1;
+                FonteULA           = 1;
+                MemParaReg         = 1;
+                LeMemoria          = 1;
+                OperacaoULA        = 2'b00;
             end
 
-            S_TYPE_STORE: begin
-                RegWrite = 0;
-                ALUSrc   = 1;
-                MemtoReg = 0;
-                MemRead  = 0;
-                MemWrite = 1;
-                Branch   = 0;
-                ALUOp    = 2'b00;
+            TIPO_S_ARMAZENAMENTO: begin
+                FonteULA           = 1;
+                EscreveMemoria     = 1;
+                OperacaoULA        = 2'b00;
             end
 
-            B_TYPE_BRANCH: begin
-                RegWrite = 0;
-                ALUSrc   = 0;
-                MemtoReg = 0;
-                MemRead  = 0;
-                MemWrite = 0;
-                Branch   = 1;
-                ALUOp    = 2'b01;
+            TIPO_B_DESVIO: begin
+                FonteULA           = 0;
+                Desvio             = 1;
+                OperacaoULA        = 2'b01;
             end
         endcase
     end
